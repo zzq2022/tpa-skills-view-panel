@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Button, StateDot } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { MarketFilters, MarketState, MarketController } from '../state.ts'
 import { useT } from '../locale-context.tsx'
@@ -98,6 +98,42 @@ export function MarketHome(props: { state: MarketState; controller: MarketContro
   const catalogue = state.filters.scope === 'catalog'
   const catalogueAt = catalogue ? (state.sources.selfhosted?.fetchedAt ?? state.sources.clawhub?.fetchedAt) : undefined
 
+  const displayCategories = useMemo(() => {
+    if (state.items.length > 0) {
+      const CATEGORY_NAMES: Record<string, { zh: string; en: string }> = {
+        general: { zh: '通用', en: 'General' },
+        tools: { zh: '实用工具', en: 'Tools' },
+        development: { zh: '开发编程', en: 'Development' },
+        search: { zh: '搜索调研', en: 'Search & Research' },
+        office: { zh: '办公文档', en: 'Office' },
+        creative: { zh: '内容创作', en: 'Creation' },
+        finance: { zh: '金融投资', en: 'Finance' },
+        data: { zh: '数据分析', en: 'Data Analysis' },
+        marketing: { zh: '营销电商', en: 'Marketing' },
+        security: { zh: '安全运维', en: 'Security & Ops' },
+      }
+      const counts = new Map<string, number>()
+      for (const item of state.items) {
+        const cat = item.category?.trim() || (item.tags && item.tags.find((t) => t !== '私有')) || 'general'
+        counts.set(cat, (counts.get(cat) ?? 0) + 1)
+      }
+      return Array.from(counts.entries())
+        .filter(([_, count]) => count > 0)
+        .sort((a, b) => b[1] - a[1])
+        .map(([key, count], index) => {
+          const meta = CATEGORY_NAMES[key.toLowerCase()]
+          return {
+            key,
+            name: meta?.zh ?? key,
+            nameEn: meta?.en ?? key,
+            sortOrder: index,
+            count,
+          }
+        })
+    }
+    return state.categories
+  }, [state.items, state.categories])
+
   return (
     <div className={styles.home}>
       <div className={styles.top}>
@@ -115,7 +151,7 @@ export function MarketHome(props: { state: MarketState; controller: MarketContro
 
         {catalogue && (
           <CategoryBar
-            categories={state.categories}
+            categories={displayCategories}
             active={state.filters.category}
             disabled={state.loading}
             onSelect={(category) => controller.setCategory(category)}
