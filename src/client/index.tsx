@@ -29,6 +29,7 @@ import type {} from '@deepseek-ai/dsh-client-ui-layout/client'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 import type { SlotCore, SlotMap } from '@deepseek-ai/dsh-client-ui-slots'
 import { MarketPage } from './page/MarketPage.tsx'
+import { WorkBuddyAccountMenu } from './components/WorkBuddyAccountMenu.tsx'
 import { SkillsHubIcon } from './icons.tsx'
 import { NS, en, zh } from './locales.ts'
 import { useMarketController, type MarketPageInjected } from './state.ts'
@@ -116,6 +117,22 @@ export function apply(ctx: ClientContext): void {
         locale: NS,
       },
       SkillsHubIcon,
+    ),
+  )
+
+  // WorkBuddy-styled launcher: combines SkillHub login with system settings gear
+  const hostSlots = slots as unknown as {
+    inject: (name: string, fn: () => void) => void
+    register: (options: { name: string; priority?: number; locale?: string }, component: unknown) => () => void
+  }
+  hostSlots.inject('settings.launcher', () =>
+    hostSlots.register(
+      {
+        name: 'settings.launcher',
+        priority: -100,
+        locale: NS,
+      },
+      WorkBuddyAccountMenu,
     ),
   )
 }

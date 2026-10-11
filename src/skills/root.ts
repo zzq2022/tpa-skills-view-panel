@@ -109,9 +109,5 @@ export async function resolveSkillsRoot(configured: string | null): Promise<stri
  * harness home) collapse to their first, most specific occurrence.
  */
 export async function resolveSkillsScanRoots(configured: string | null): Promise<string[]> {
-  const roots: string[] = [await resolveSkillsRoot(configured)]
-  for (const candidate of [dshUserSkillsDir(), agentsUserSkillsDir()]) {
-    if (!roots.includes(candidate)) roots.push(candidate)
-  }
-  return roots
+  return [await resolveSkillsRoot(configured)]
 }

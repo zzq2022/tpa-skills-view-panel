@@ -1,0 +1,173 @@
+.container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.container[data-wide="false"] {
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+}
+
+.userBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+  padding: 0 8px;
+  border: none;
+  background: transparent;
+  color: var(--dsw-text-main, #24292f);
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.15s ease;
+  font-size: 13px;
+  font-weight: 500;
+  outline: none;
+}
+
+.userBtn:hover {
+  background-color: var(--dsw-surface-hover, rgba(0, 0, 0, 0.04));
+}
+
+.container[data-wide="false"] .userBtn {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  justify-content: center;
+}
+
+.avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--dsw-surface-subtle, #f0f2f5);
+  border: 1px solid var(--dsw-border-subtle, #e1e4e8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--dsw-text-secondary, #57606a);
+  font-size: 12px;
+  font-weight: 600;
+  overflow: hidden;
+}
+
+.avatarLoggedIn {
+  background: #1a73e8;
+  color: #ffffff;
+  border-color: #1a73e8;
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.userName {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.settingsBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  color: var(--dsw-text-secondary, #57606a);
+  border-radius: 6px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  outline: none;
+}
+
+.settingsBtn:hover {
+  background-color: var(--dsw-surface-hover, rgba(0, 0, 0, 0.04));
+  color: var(--dsw-text-main, #24292f);
+}
+
+.container[data-wide="false"] .settingsBtn {
+  width: 36px;
+  height: 36px;
+}
+
+/* User Popover / Dropdown Menu */
+.userMenu {
+  position: absolute;
+  bottom: 46px;
+  left: 8px;
+  min-width: 180px;
+  background: var(--dsw-surface-base, #ffffff);
+  border: 1px solid var(--dsw-border-subtle, #e1e4e8);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  padding: 6px 0;
+  z-index: 1000;
+  animation: fadeIn 0.15s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.menuHeader {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--dsw-border-subtle, #e1e4e8);
+  margin-bottom: 4px;
+}
+
+.menuUser {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--dsw-text-main, #24292f);
+}
+
+.menuSource {
+  font-size: 11px;
+  color: var(--dsw-text-secondary, #57606a);
+  margin-top: 2px;
+}
+
+.menuItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  color: var(--dsw-text-main, #24292f);
+  font-size: 13px;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.1s ease;
+}
+
+.menuItem:hover {
+  background-color: var(--dsw-surface-hover, rgba(0, 0, 0, 0.04));
+}
+
+.menuItemDanger {
+  color: #cf222e;
+}
+
+.menuItemDanger:hover {
+  background-color: rgba(207, 34, 46, 0.08);
+}
