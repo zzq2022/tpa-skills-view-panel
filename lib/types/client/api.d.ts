@@ -78,7 +78,7 @@ export declare function fetchMarketList(query: MarketQuery, signal?: AbortSignal
     refresh?: boolean;
 }): Promise<MarketListResult>;
 /** The category bar's entries (curated catalogue), with the snapshot's provenance. */
-export declare function fetchMarketCategories(signal?: AbortSignal): Promise<MarketCategoriesResult>;
+export declare function fetchMarketCategories(source?: string, signal?: AbortSignal): Promise<MarketCategoriesResult>;
 /** One skill's full detail plus the health of the source that served it. */
 export declare function fetchSkillDetail(id: string, signal?: AbortSignal, options?: {
     refresh?: boolean;

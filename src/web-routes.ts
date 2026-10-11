@@ -411,8 +411,9 @@ async function handleList(url: URL, res: ServerResponse): Promise<void> {
   sendJson(res, 200, result)
 }
 
-async function handleCategories(res: ServerResponse): Promise<void> {
-  sendJson(res, 200, listMarketCategories())
+async function handleCategories(url: URL, res: ServerResponse): Promise<void> {
+  const source = url.searchParams.get('source') as MarketSource | 'all' | null
+  sendJson(res, 200, listMarketCategories(source ?? undefined))
 }
 
 async function handleDetail(source: MarketSource, slug: string, url: URL, res: ServerResponse): Promise<void> {
@@ -502,7 +503,7 @@ async function handle(
   }
   if (head === 'categories' && segments.length === 1) {
     requireMethod(method, 'GET')
-    await handleCategories(res)
+    await handleCategories(url, res)
     return
   }
   if (head === 'stats' && segments.length === 1) {

@@ -220,8 +220,9 @@ export async function fetchMarketList(
 }
 
 /** The category bar's entries (curated catalogue), with the snapshot's provenance. */
-export async function fetchMarketCategories(signal?: AbortSignal): Promise<MarketCategoriesResult> {
-  return getJson<MarketCategoriesResult>('/categories', signal)
+export async function fetchMarketCategories(source?: string, signal?: AbortSignal): Promise<MarketCategoriesResult> {
+  const suffix = source && source !== 'all' ? `?source=${encodeURIComponent(source)}` : ''
+  return getJson<MarketCategoriesResult>(`/categories${suffix}`, signal)
 }
 
 /** One skill's full detail plus the health of the source that served it. */

@@ -69,6 +69,23 @@ interface SelfhostedDetailWire {
 const zipCache = new Map<string, { files: ExtractedZipFile[]; timestamp: number }>()
 // In-memory mapping from slug to actual backend skill_id
 const slugToIdMap = new Map<string, string>()
+// In-memory registry of skills returned by self-hosted server
+const knownSkillsMap = new Map<string, NormalizedSkill>()
+
+export function recordSelfhostedSkills(skills: NormalizedSkill[]): void {
+  for (const s of skills) {
+    knownSkillsMap.set(s.id, s)
+  }
+}
+
+export function getSelfhostedCategories(): Array<{ key: string; count: number }> {
+  const counts = new Map<string, number>()
+  for (const s of knownSkillsMap.values()) {
+    const cat = s.category || 'general'
+    counts.set(cat, (counts.get(cat) ?? 0) + 1)
+  }
+  return Array.from(counts.entries()).map(([key, count]) => ({ key, count }))
+}
 
 function normalizeSelfhostedItem(item: SelfhostedItemWire): NormalizedSkill {
   const resolvedSlug =
@@ -197,6 +214,7 @@ export const selfhostedProvider: MarketProvider = {
     }
 
     const hasMore = pageNum * pageLimit < total
+    recordSelfhostedSkills(items)
 
     return {
       items,
@@ -227,6 +245,7 @@ export const selfhostedProvider: MarketProvider = {
     const rawItems = resp.data?.items || []
     const total = resp.data?.total ?? rawItems.length
     const items = rawItems.map(normalizeSelfhostedItem)
+    recordSelfhostedSkills(items)
     const hasMore = pageNum * pageLimit < total
 
     return {

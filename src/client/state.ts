@@ -468,8 +468,15 @@ function createInternalController(): MarketControllerInternal {
    * calls this on Enter (or clear), so typing never reloads the catalogue.
    */
   function applyInstantFilter(patch: Partial<MarketFilters>): void {
-    commit({ filters: { ...state.filters, ...patch } })
+    const newFilters = { ...state.filters, ...patch }
+    if (patch.source !== undefined && patch.source !== state.filters.source) {
+      newFilters.category = 'all'
+    }
+    commit({ filters: newFilters })
     void refresh()
+    if (patch.source !== undefined) {
+      void loadCategories(patch.source)
+    }
   }
 
   function setQuery(q: string): void {
@@ -479,16 +486,21 @@ function createInternalController(): MarketControllerInternal {
   }
 
   let categoriesRequest: Promise<void> | null = null
+  let categoriesRequestedSource: string | undefined = undefined
 
   /**
    * The bar is navigation over the catalogue: a failure leaves it hidden and is
    * retried on the next call, never surfaced as a catalogue error.
    */
-  function loadCategories(): Promise<void> {
-    if (categoriesRequest !== null) return categoriesRequest
+  function loadCategories(source?: string): Promise<void> {
+    const targetSource = source ?? state.filters.source
+    if (categoriesRequest !== null && categoriesRequestedSource === targetSource) {
+      return categoriesRequest
+    }
+    categoriesRequestedSource = targetSource
     const request = (async () => {
       try {
-        const result = await fetchMarketCategories()
+        const result = await fetchMarketCategories(targetSource)
         commit({ categories: result.items })
         if (result.items.length === 0) categoriesRequest = null
       } catch {

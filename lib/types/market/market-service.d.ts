@@ -79,7 +79,7 @@ export declare function listMarketSkills(params: ListMarketSkillsParams): Promis
  * is what keeps infinite scroll from stalling on a filtered-out page.
  */
 export declare function listCatalogSkills(params: ListMarketSkillsParams): MarketListResult;
-export declare function listMarketCategories(): MarketCategoriesResult;
+export declare function listMarketCategories(source?: MarketSource | 'all'): MarketCategoriesResult;
 export declare function getMarketSkillDetail(source: MarketSource, slug: string, options?: {
     force?: boolean;
     allowStale?: boolean;
