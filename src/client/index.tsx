@@ -130,7 +130,6 @@ export function apply(ctx: ClientContext): void {
       {
         name: 'settings.launcher',
         priority: -100,
-        locale: NS,
       },
       WorkBuddyAccountMenu,
     ),

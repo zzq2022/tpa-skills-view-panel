@@ -15,6 +15,7 @@
  */
 
 import { createContext, useContext, type ReactNode } from 'react'
+import { zh, en } from './locales.ts'
 
 /** Translate one dictionary key with optional `{name}` template params. */
 export type Translate = (key: string, params?: Record<string, unknown>) => string
@@ -27,16 +28,19 @@ export function LocaleProvider(props: { t: Translate; children: ReactNode }): JS
 }
 
 /**
- * Read the panel's translate seat.
- *
- * Throws instead of falling back to the raw key: a component rendered outside
- * the panel would otherwise silently print dictionary keys, which is far harder
- * to notice than a loud assembly error.
+ * Read the panel's translate seat, or gracefully fallback to default dictionary
+ * when called outside the panel root (e.g. sidebar slots).
  */
 export function useT(): Translate {
   const t = useContext(LocaleContext)
-  if (t === null) {
-    throw new Error('skills-hub: useT() was called outside <LocaleProvider>; the panel root must provide the locale seat')
+  if (t !== null) return t
+  return (key: string, params?: Record<string, unknown>): string => {
+    let text = zh[key] ?? en[key as keyof typeof en] ?? key
+    if (params) {
+      for (const [k, v] of Object.entries(params)) {
+        text = text.replace(new RegExp(`\\{${k}\\}`, 'g'), String(v))
+      }
+    }
+    return text
   }
-  return t
 }

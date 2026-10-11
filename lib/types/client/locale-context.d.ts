@@ -22,10 +22,7 @@ export declare function LocaleProvider(props: {
     children: ReactNode;
 }): JSX.Element;
 /**
- * Read the panel's translate seat.
- *
- * Throws instead of falling back to the raw key: a component rendered outside
- * the panel would otherwise silently print dictionary keys, which is far harder
- * to notice than a loud assembly error.
+ * Read the panel's translate seat, or gracefully fallback to default dictionary
+ * when called outside the panel root (e.g. sidebar slots).
  */
 export declare function useT(): Translate;

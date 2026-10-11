@@ -132,15 +132,17 @@ export function WorkBuddyAccountMenu(props: WorkBuddyAccountMenuProps): JSX.Elem
       )}
 
       {/* Auth Dialog */}
-      <SelfhostedAuthDialog
-        open={authDialogOpen}
-        baseUrl={authStatus?.baseUrl || 'http://127.0.0.1:3000'}
-        onClose={() => setAuthDialogOpen(false)}
-        onSuccess={() => {
-          void reloadAuth()
-          window.dispatchEvent(new Event('skills-hub:auth-changed'))
-        }}
-      />
+      {authDialogOpen && (
+        <SelfhostedAuthDialog
+          open={authDialogOpen}
+          baseUrl={authStatus?.baseUrl || 'http://127.0.0.1:3000'}
+          onClose={() => setAuthDialogOpen(false)}
+          onSuccess={() => {
+            void reloadAuth()
+            window.dispatchEvent(new Event('skills-hub:auth-changed'))
+          }}
+        />
+      )}
     </div>
   )
 }

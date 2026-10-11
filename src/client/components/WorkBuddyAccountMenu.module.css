@@ -4,6 +4,8 @@
   justify-content: space-between;
   gap: 6px;
   width: 100%;
+  flex: 1;
+  min-width: 0;
   box-sizing: border-box;
 }
 
@@ -23,8 +25,8 @@
   padding: 0 8px;
   border: none;
   background: transparent;
-  color: var(--dsw-text-main, #24292f);
-  border-radius: 6px;
+  color: var(--dsw-alias-label-primary, var(--dsw-text-main, #24292f));
+  border-radius: var(--dsw-radius-md, 6px);
   cursor: pointer;
   text-align: left;
   transition: background-color 0.15s ease;
@@ -34,7 +36,7 @@
 }
 
 .userBtn:hover {
-  background-color: var(--dsw-surface-hover, rgba(0, 0, 0, 0.04));
+  background-color: var(--dsw-alias-interactive-bg-hover, var(--dsw-surface-hover, rgba(0, 0, 0, 0.04)));
 }
 
 .container[data-wide="false"] .userBtn {
