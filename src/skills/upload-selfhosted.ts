@@ -66,6 +66,17 @@ export async function uploadInstalledSkillToSelfhosted(
   const zipBuffer = createZipArchive(entries)
   const packageBase64 = zipBuffer.toString('base64')
 
+  // Extract version from SKILL.md frontmatter or fallback to record/1.0.0
+  let resolvedVersion = item.version || '1.0.0'
+  const skillMdEntry = entries.find((e) => e.path.toLowerCase() === 'skill.md')
+  if (skillMdEntry) {
+    const text = skillMdEntry.data.toString('utf-8')
+    const match = text.match(/^version:\s*['"]?([a-zA-Z0-9._-]+)['"]?/m)
+    if (match && match[1]) {
+      resolvedVersion = match[1].trim()
+    }
+  }
+
   // 4. Prepare payload for /api/skillhub/review-submissions
   const authStatus = selfhostedAuth.getStatus()
   const authorName = item.owner || authStatus.user?.username || 'user'
@@ -76,6 +87,7 @@ export async function uploadInstalledSkillToSelfhosted(
     description: item.summary || '',
     category: 'other',
     author: authorName,
+    version: resolvedVersion,
   }
 
   const baseUrl = getProviderBase('selfhosted').replace(/\/+$/, '')

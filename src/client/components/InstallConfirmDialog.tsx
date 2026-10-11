@@ -132,6 +132,9 @@ export function InstallConfirmDialog(props: {
             <FolderIcon size={14} />
             <span>…/skills/{slugOf(skill.id).toLowerCase()}/</span>
           </p>
+          <p className={styles.note} style={{ marginTop: '6px' }}>
+            {t('installOverwriteNotice')}
+          </p>
         </section>
 
         {skill.snapshotAt !== undefined && (

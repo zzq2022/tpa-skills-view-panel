@@ -180,15 +180,7 @@ async function assertInstallTargetFree(target: string, dirName: string, id: stri
       `A file or link already occupies the skill directory: ${dirName}`,
     )
   }
-  const meta = parseInstalledMeta(await readJsonIfExists(path.join(target, INSTALL_META_FILE)))
-  if (meta !== null && meta.id === id) {
-    throw new MarketInstallError(409, MARKET_ERROR_CODES.alreadyInstalled, `Skill already installed: ${id}`)
-  }
-  throw new MarketInstallError(
-    409,
-    MARKET_ERROR_CODES.notInstallable,
-    `Skill directory "${dirName}" was not installed by Skills Hub (name-conflict); remove it manually to continue`,
-  )
+  // If target is an existing normal directory, we allow takeover and overwrite installation.
 }
 
 /** Read and parse a JSON file; `undefined` for absent or unparsable content. */
@@ -402,12 +394,18 @@ async function performInstall(
 
     await assertInstallTargetFree(target, dirName, id)
     try {
+      const exists = await fs.stat(target).then(() => true).catch(() => false)
+      if (exists) {
+        const trashPath = path.join(skillsRoot, `.trash-${dirName}-${Date.now()}`)
+        try {
+          await fs.rename(target, trashPath)
+          void fs.rm(trashPath, { recursive: true, force: true }).catch(() => undefined)
+        } catch {
+          await fs.rm(target, { recursive: true, force: true }).catch(() => undefined)
+        }
+      }
       await fs.rename(stagingDir, target)
     } catch (error) {
-      // A directory/file that appeared between the pre-assert and the rename is a
-      // name conflict (the exact race `assertInstallTargetFree` cannot close), not
-      // a disk failure — and the raw ENOTEMPTY/EEXIST message would leak two
-      // absolute paths into the error envelope.
       if (hasErrorCode(error, 'ENOTEMPTY') || hasErrorCode(error, 'EEXIST') || hasErrorCode(error, 'ENOTDIR')) {
         throw new MarketInstallError(
           409,

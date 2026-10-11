@@ -174,6 +174,7 @@ declare const zhDictionary: {
     uninstallDescription: string;
     installConfirmMessage: string;
     installLocation: string;
+    installOverwriteNotice: string;
     cancel: string;
     confirm: string;
     close: string;

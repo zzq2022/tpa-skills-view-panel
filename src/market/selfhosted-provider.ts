@@ -41,6 +41,7 @@ interface SelfhostedItemWire {
   isStarred?: boolean
   featured?: boolean
   visibility?: 'private' | 'shared'
+  version?: string | number
 }
 
 interface SelfhostedDetailWire {
@@ -61,6 +62,7 @@ interface SelfhostedDetailWire {
   updatedAt?: string
   isStarred?: boolean
   featured?: boolean
+  version?: string | number
 }
 
 // In-memory cache mapping skill slug/id to extracted zip files
@@ -100,7 +102,7 @@ function normalizeSelfhostedItem(item: SelfhostedItemWire): NormalizedSkill {
     },
     tags,
     category: item.category || 'general',
-    version: '1.0.0',
+    version: item.version ? String(item.version) : '1.0.0',
     updatedAt: Number.isFinite(parsedDate) ? parsedDate : Date.now(),
     securityStatus: 'verified',
     installState: 'installable',

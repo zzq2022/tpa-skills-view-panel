@@ -22,7 +22,7 @@ import type { Dirent } from 'node:fs'
 import * as path from 'node:path'
 import { readBoundedText } from './read-text.ts'
 import type { InstalledLookup } from '../market/market-service.ts'
-import { MARKET_SOURCES, skillId, type MarketSource } from '../market/types.ts'
+import { MARKET_SOURCES, skillId, parseSkillId, type MarketSource } from '../market/types.ts'
 
 /** Provenance sidecar written next to `SKILL.md` by the installer. */
 export const INSTALL_META_FILE = '.skills-hub.json'
@@ -444,13 +444,32 @@ export async function readSkillHeadline(
  */
 export function installedLookupFrom(records: InstalledSkillRecord[]): InstalledLookup {
   const byId = new Map<string, InstalledSkillRecord>()
-  for (const record of records) if (!byId.has(record.id)) byId.set(record.id, record)
+  const bySlug = new Map<string, InstalledSkillRecord>()
+  for (const record of records) {
+    if (!byId.has(record.id)) byId.set(record.id, record)
+    const slugKey = record.slug.toLowerCase()
+    if (!bySlug.has(slugKey)) bySlug.set(slugKey, record)
+    const dirKey = record.dirName.toLowerCase()
+    if (!bySlug.has(dirKey)) bySlug.set(dirKey, record)
+  }
   return {
     has(id: string): boolean {
-      return byId.has(id)
+      if (byId.has(id)) return true
+      const parsed = parseSkillId(id)
+      if (parsed) {
+        const slugKey = parsed.slug.toLowerCase()
+        if (bySlug.has(slugKey)) return true
+      }
+      return false
     },
     info(id: string): { dirName: string; version?: string; installedAt?: string } | undefined {
-      const record = byId.get(id)
+      let record = byId.get(id)
+      if (record === undefined) {
+        const parsed = parseSkillId(id)
+        if (parsed) {
+          record = bySlug.get(parsed.slug.toLowerCase())
+        }
+      }
       if (record === undefined) return undefined
       return {
         dirName: record.dirName,
