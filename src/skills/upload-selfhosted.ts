@@ -113,7 +113,9 @@ export async function uploadInstalledSkillToSelfhosted(
     let msg = `上传失败 (HTTP ${response.status})`
     try {
       const parsed = JSON.parse(errorText)
-      if (parsed.detail) {
+      if (parsed.error?.message) {
+        msg = typeof parsed.error.message === 'string' ? parsed.error.message : JSON.stringify(parsed.error.message)
+      } else if (parsed.detail) {
         msg = typeof parsed.detail === 'string' ? parsed.detail : JSON.stringify(parsed.detail)
       } else if (parsed.message) {
         msg = parsed.message
