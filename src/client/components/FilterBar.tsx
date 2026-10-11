@@ -1,10 +1,8 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState } from 'react'
 import { Button, Input } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { MarketFilters } from '../state.ts'
 import { useT } from '../locale-context.tsx'
 import { CloseIcon, SearchIcon } from '../icons.tsx'
-import { fetchSelfhostedAuthStatus, logoutSelfhosted, type SelfhostedAuthStatusDto } from '../api.ts'
-import { SelfhostedAuthDialog } from './SelfhostedAuthDialog.tsx'
 import styles from './FilterBar.module.css'
 
 /** Option order for each select; the values are the frozen filter unions. */
@@ -38,31 +36,6 @@ export function FilterBar(props: {
   const { filters, total, disabled, onChange } = props
   const t = useT()
   const [draft, setDraft] = useState(filters.q)
-  const [authStatus, setAuthStatus] = useState<SelfhostedAuthStatusDto | null>(null)
-  const [dialogOpen, setDialogOpen] = useState(false)
-
-  const reloadAuth = useCallback(async () => {
-    try {
-      const res = await fetchSelfhostedAuthStatus()
-      setAuthStatus(res)
-    } catch {
-      // ignore
-    }
-  }, [])
-
-  useEffect(() => {
-    void reloadAuth()
-  }, [reloadAuth])
-
-  const handleLogout = async (): Promise<void> => {
-    try {
-      await logoutSelfhosted()
-      await reloadAuth()
-      onChange({ q: filters.q })
-    } catch {
-      // ignore
-    }
-  }
 
   // Follow external resets of the submitted query.
   useEffect(() => {
@@ -160,36 +133,6 @@ export function FilterBar(props: {
           ))}
         </select>
       </label>
-
-      {filters.source === 'selfhosted' && authStatus && (
-        <div className={styles.authBadge}>
-          <span className={authStatus.loggedIn ? styles.authDot : styles.authDotOff} />
-          <span>
-            {authStatus.loggedIn
-              ? `${authStatus.user?.displayName || authStatus.user?.username || '已登录'}`
-              : t('selfhosted.unauthenticated')}
-          </span>
-          {authStatus.loggedIn ? (
-            <button type="button" className={styles.authActionBtn} onClick={handleLogout}>
-              {t('selfhosted.logout')}
-            </button>
-          ) : (
-            <button type="button" className={styles.authActionBtn} onClick={() => setDialogOpen(true)}>
-              {t('selfhosted.login')}
-            </button>
-          )}
-        </div>
-      )}
-
-      <SelfhostedAuthDialog
-        open={dialogOpen}
-        baseUrl={authStatus?.baseUrl || 'http://127.0.0.1:3000'}
-        onClose={() => setDialogOpen(false)}
-        onSuccess={() => {
-          void reloadAuth()
-          onChange({ q: filters.q })
-        }}
-      />
 
       <p className={styles.srOnly} role="status" aria-live="polite">
         {t('count', { count: total })}

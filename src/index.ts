@@ -25,6 +25,7 @@ import { selfhostedAuth } from './market/selfhosted-auth.ts'
 import { setInstalledLookup, resetInstalledLookup } from './market/market-service.ts'
 import { installedLookupFrom, scanInstalledSkills } from './skills/installed.ts'
 import { resolveDshHome, resolveSkillsRoot, resolveSkillsScanRoots } from './skills/root.ts'
+import { clientTrackingService } from './tracking/client-tracking.ts'
 
 import {
   registerSkillsHubRoutes,
@@ -177,12 +178,17 @@ export function apply(ctx: Context, config: SkillsHubConfig): void {
 
   ctx.effect(() => () => {
     disposed = true
+    clientTrackingService.stop()
     // The market layer is module state that outlives this plugin instance: drop
     // our installed-skill index so a reloaded instance cannot serve stale
     // install state (and `disposed` above stops an in-flight scan from
     // republishing it).
     resetInstalledLookup()
   }, 'skills-hub: activation state')
+
+  if (resolved.selfhostedEnabled) {
+    clientTrackingService.start()
+  }
 
 
   // Apply is synchronous, but the first HTTP read must wait for install

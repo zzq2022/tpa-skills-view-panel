@@ -13,14 +13,16 @@
  * presentational components free of slot props (contract §5.4).
  */
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { Toast } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
 import type { MarketSource } from '../../market/types.ts'
+import { fetchSelfhostedAuthStatus, logoutSelfhosted, type SelfhostedAuthStatusDto } from '../api.ts'
 import { InstallConfirmDialog } from '../components/InstallConfirmDialog.tsx'
 import { InstalledSkills } from '../components/InstalledSkills.tsx'
 import { MarketHome } from '../components/MarketHome.tsx'
 import { MarketSkillDetail } from '../components/MarketSkillDetail.tsx'
+import { SelfhostedAuthDialog } from '../components/SelfhostedAuthDialog.tsx'
 import { SkillDetailSkeleton } from '../components/SkillDetailShell.tsx'
 import { LocaleProvider, useT, type Translate } from '../locale-context.tsx'
 import { NS } from '../locales.ts'
@@ -51,8 +53,33 @@ export function MarketPage(props: MarketPageProps): JSX.Element {
 function MarketPageSurface({ controller }: { controller: MarketController }): JSX.Element {
   const t = useT()
   const [section, setSection] = useState<'market' | 'installed'>('market')
+  const [authStatus, setAuthStatus] = useState<SelfhostedAuthStatusDto | null>(null)
+  const [authDialogOpen, setAuthDialogOpen] = useState(false)
   const state = controller.state
   const detailId = state.view.kind === 'detail' ? state.view.id : null
+
+  const reloadAuth = useCallback(async () => {
+    try {
+      const res = await fetchSelfhostedAuthStatus()
+      setAuthStatus(res)
+    } catch {
+      // ignore
+    }
+  }, [])
+
+  useEffect(() => {
+    void reloadAuth()
+  }, [reloadAuth])
+
+  const handleLogout = async (): Promise<void> => {
+    try {
+      await logoutSelfhosted()
+      await reloadAuth()
+      void controller.refresh()
+    } catch {
+      // ignore
+    }
+  }
 
   // The panel guarantees its own first load: the catalogue component may or may
   // not request one, and the controller de-duplicates a concurrent request, so a
@@ -67,10 +94,42 @@ function MarketPageSurface({ controller }: { controller: MarketController }): JS
 
   return (
     <div className={styles.panel}>
-      <nav className={styles.navigation} aria-label={t('panel')}>
-        <button type="button" aria-current={section === 'market' ? 'page' : undefined} onClick={() => setSection('market')}>{t('marketTab')}</button>
-        <button type="button" aria-current={section === 'installed' ? 'page' : undefined} onClick={() => setSection('installed')}>{t('installedTitle')}</button>
-      </nav>
+      <header className={styles.header}>
+        <nav className={styles.navigation} aria-label={t('panel')}>
+          <button type="button" aria-current={section === 'market' ? 'page' : undefined} onClick={() => setSection('market')}>{t('marketTab')}</button>
+          <button type="button" aria-current={section === 'installed' ? 'page' : undefined} onClick={() => setSection('installed')}>{t('installedTitle')}</button>
+        </nav>
+        <div className={styles.headerActions}>
+          <div className={styles.authBadge}>
+            <span
+              className={authStatus?.loggedIn ? styles.authDotOn : styles.authDotOff}
+              title={authStatus?.loggedIn ? t('selfhosted.connected') : t('selfhosted.unauthenticated')}
+            />
+            {authStatus?.loggedIn ? (
+              <span className={styles.authUsername} title={authStatus.user?.username}>
+                {authStatus.user?.displayName || authStatus.user?.username || '已登录'}
+              </span>
+            ) : null}
+            {authStatus?.loggedIn ? (
+              <button
+                type="button"
+                className={styles.authBtn}
+                onClick={handleLogout}
+              >
+                {t('selfhosted.logout')}
+              </button>
+            ) : (
+              <button
+                type="button"
+                className={styles.authBtnPrimary}
+                onClick={() => setAuthDialogOpen(true)}
+              >
+                {t('selfhosted.login')}
+              </button>
+            )}
+          </div>
+        </div>
+      </header>
       <div className={styles.body}>
         {section === 'installed' ? (
           <InstalledSkills
@@ -120,6 +179,16 @@ function MarketPageSurface({ controller }: { controller: MarketController }): JS
           }}
         />
       )}
+
+      <SelfhostedAuthDialog
+        open={authDialogOpen}
+        baseUrl={authStatus?.baseUrl || 'http://127.0.0.1:3000'}
+        onClose={() => setAuthDialogOpen(false)}
+        onSuccess={() => {
+          void reloadAuth()
+          void controller.refresh()
+        }}
+      />
 
       {state.notice === null ? null : (
         <Toast

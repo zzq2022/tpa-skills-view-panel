@@ -34,6 +34,7 @@ import {
 import { getMarketStats } from './market/cache.ts'
 import { CLAWHUB_OWNER_PATTERN } from './market/clawhub-provider.ts'
 import { selfhostedAuth } from './market/selfhosted-auth.ts'
+import { clientTrackingService } from './tracking/client-tracking.ts'
 import { readInstalledFile, readInstalledSkill, removeInstalledSkill, resolveEntry } from './skills/management.ts'
 import { uploadInstalledSkillToSelfhosted, UploadSelfhostedError } from './skills/upload-selfhosted.ts'
 import { scanInstalledSkills } from './skills/installed.ts'
@@ -582,12 +583,14 @@ async function handle(
       const username = String(body['username'] || '')
       const password = String(body['password'] || '')
       const user = await selfhostedAuth.login(username, password)
+      void clientTrackingService.pulse()
       sendJson(res, 200, { ok: true, user })
       return
     }
     if (second === 'logout' && segments.length === 2) {
       requireMethod(method, 'POST')
       selfhostedAuth.logout()
+      void clientTrackingService.pulse()
       sendJson(res, 200, { ok: true })
       return
     }
