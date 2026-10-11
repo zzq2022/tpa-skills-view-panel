@@ -81,6 +81,15 @@ function MarketPageSurface({ controller }: { controller: MarketController }): JS
     }
   }
 
+  useEffect(() => {
+    const handleAuthChange = (): void => {
+      void reloadAuth()
+      void controller.refresh()
+    }
+    window.addEventListener('skills-hub:auth-changed', handleAuthChange)
+    return () => window.removeEventListener('skills-hub:auth-changed', handleAuthChange)
+  }, [controller, reloadAuth])
+
   // The panel guarantees its own first load: the catalogue component may or may
   // not request one, and the controller de-duplicates a concurrent request, so a
   // second trigger costs nothing. A StrictMode remount re-runs this effect and is

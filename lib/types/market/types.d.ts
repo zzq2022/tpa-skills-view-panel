@@ -6,7 +6,8 @@
  *  - SkillHub (https://api.skillhub.cn) — page/pageSize pagination, security reports
  */
 export type MarketSource = 'clawhub' | 'skillhub' | 'selfhosted';
-export declare const MARKET_SOURCES: MarketSource[];
+export declare const ALL_KNOWN_SOURCES: readonly MarketSource[];
+export declare const MARKET_SOURCES: readonly MarketSource[];
 export type SecurityStatus = 'verified' | 'benign' | 'unknown' | 'flagged';
 export type InstallState = 'installed' | 'installable' | 'not-installable';
 export type SourceHealthStatus = 'ok' | 'degraded' | 'failed' | 'cached';

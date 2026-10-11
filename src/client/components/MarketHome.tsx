@@ -96,7 +96,7 @@ export function MarketHome(props: { state: MarketState; controller: MarketContro
     state.filters.q !== '' || state.filters.category !== 'all' || state.filters.source !== 'all' || state.filters.security !== 'all' || state.filters.installed !== 'all'
 
   const catalogue = state.filters.scope === 'catalog'
-  const catalogueAt = catalogue ? state.sources.clawhub.fetchedAt : undefined
+  const catalogueAt = catalogue ? (state.sources.selfhosted?.fetchedAt ?? state.sources.clawhub?.fetchedAt) : undefined
 
   return (
     <div className={styles.home}>

@@ -178,7 +178,7 @@ export function InstalledSkills(props: {
 
   const needle = query.trim().toLocaleLowerCase()
   const visible = items.filter((item) =>
-    `${item.name} ${item.summary ?? ''} ${item.dirPath}`.toLocaleLowerCase().includes(needle),
+    `${item.name} ${item.slug ?? ''} ${item.dirName ?? ''} ${item.summary ?? ''} ${item.dirPath}`.toLocaleLowerCase().includes(needle),
   )
 
   return (
@@ -287,6 +287,22 @@ export function InstalledSkills(props: {
                               >
                                 {item.name}
                               </button>
+                              {item.slug && item.slug.toLowerCase() !== item.name.toLowerCase() && (
+                                <span
+                                  style={{
+                                    fontSize: 12,
+                                    color: 'var(--dsw-alias-label-secondary, #888)',
+                                    background: 'var(--dsw-alias-bg-subtle, rgba(125, 125, 125, 0.1))',
+                                    padding: '1px 6px',
+                                    borderRadius: 4,
+                                    marginLeft: 6,
+                                    fontFamily: 'monospace',
+                                  }}
+                                  title={`Slug: ${item.slug}`}
+                                >
+                                  {item.slug}
+                                </span>
+                              )}
                               {item.version !== undefined && item.version !== '' && (
                                 <span className={styles.version}>v{item.version}</span>
                               )}

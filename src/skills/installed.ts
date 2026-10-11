@@ -22,7 +22,7 @@ import type { Dirent } from 'node:fs'
 import * as path from 'node:path'
 import { readBoundedText } from './read-text.ts'
 import type { InstalledLookup } from '../market/market-service.ts'
-import { MARKET_SOURCES, skillId, parseSkillId, type MarketSource } from '../market/types.ts'
+import { ALL_KNOWN_SOURCES, MARKET_SOURCES, skillId, parseSkillId, type MarketSource } from '../market/types.ts'
 
 /** Provenance sidecar written next to `SKILL.md` by the installer. */
 export const INSTALL_META_FILE = '.skills-hub.json'
@@ -98,7 +98,7 @@ export function parseInstalledMeta(value: unknown): InstalledMetaFile | null {
   const slug = candidate['slug']
   const id = candidate['id']
   const installedAt = candidate['installedAt']
-  if (typeof source !== 'string' || !MARKET_SOURCES.includes(source as MarketSource)) return null
+  if (typeof source !== 'string' || !ALL_KNOWN_SOURCES.includes(source as MarketSource)) return null
   if (typeof slug !== 'string' || slug === '') return null
   if (typeof id !== 'string' || id !== skillId(source as MarketSource, slug)) return null
   if (typeof installedAt !== 'string' || installedAt === '') return null
@@ -304,12 +304,15 @@ async function readDirectorySkill(rootPath: string, dirName: string): Promise<In
   if (markdown === undefined) return undefined
   const meta = parseInstalledMeta(await readJsonIfExists(path.join(dirPath, INSTALL_META_FILE)))
   const frontmatter = parseFrontmatter(markdown)
+  const h1Match = markdown.match(/^#\s+([^\r\n]+)/m)
+  const headline = h1Match?.[1] ? h1Match[1].trim() : undefined
+  const friendlyName = headline || frontmatter.name || dirName
   const measured = await measureDirectory(dirPath)
   const shared = {
     key: installedEntryKey(dirPath),
     linked: false,
     removable: true,
-    name: frontmatter.name ?? dirName,
+    name: friendlyName,
     dirName,
     dirPath,
     ...(frontmatter.description === undefined ? {} : { summary: summarize(frontmatter.description) }),
@@ -344,6 +347,9 @@ async function readFlatSkill(rootPath: string, fileName: string): Promise<Instal
   const markdown = await readTextIfExists(filePath)
   if (markdown === undefined) return undefined
   const frontmatter = parseFrontmatter(markdown)
+  const h1Match = markdown.match(/^#\s+([^\r\n]+)/m)
+  const headline = h1Match?.[1] ? h1Match[1].trim() : undefined
+  const friendlyName = headline || frontmatter.name || fileName.slice(0, -'.md'.length)
   const dirName = fileName.slice(0, -'.md'.length)
   let bytes = 0
   try {
@@ -358,7 +364,7 @@ async function readFlatSkill(rootPath: string, fileName: string): Promise<Instal
     id: `local:${dirName}`,
     source: 'local',
     slug: dirName,
-    name: frontmatter.name ?? dirName,
+    name: friendlyName,
     dirName,
     dirPath: filePath,
     ...(frontmatter.description === undefined ? {} : { summary: summarize(frontmatter.description) }),
@@ -451,6 +457,8 @@ export function installedLookupFrom(records: InstalledSkillRecord[]): InstalledL
     if (!bySlug.has(slugKey)) bySlug.set(slugKey, record)
     const dirKey = record.dirName.toLowerCase()
     if (!bySlug.has(dirKey)) bySlug.set(dirKey, record)
+    const nameKey = record.name.toLowerCase()
+    if (!bySlug.has(nameKey)) bySlug.set(nameKey, record)
   }
   return {
     has(id: string): boolean {

@@ -248,3 +248,34 @@ export function ExternalLinkIcon({ size = 16, className }: SkillsHubIconProps): 
     </svg>
   )
 }
+
+/** User outline: login and account avatar placeholder. */
+export function UserIcon({ size = 16, className }: SkillsHubIconProps): JSX.Element {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" className={className} strokeWidth={1.5} {...stroke} aria-hidden="true" focusable="false">
+      <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
+      <path d="M2.5 14a5.5 5.5 0 0 1 11 0" />
+    </svg>
+  )
+}
+
+/** Gear: settings launcher icon. */
+export function SettingsIcon({ size = 16, className }: SkillsHubIconProps): JSX.Element {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" className={className} strokeWidth={1.5} {...stroke} aria-hidden="true" focusable="false">
+      <circle cx="8" cy="8" r="2.2" />
+      <path d="M13.6 8a5.6 5.6 0 0 0-.08-.94l1.24-.96a.3.3 0 0 0 .07-.38l-1.18-2.04a.3.3 0 0 0-.37-.13l-1.46.59a5.7 5.7 0 0 0-1.63-.95l-.22-1.55A.3.3 0 0 0 9.68.34H7.32a.3.3 0 0 0-.3.26l-.22 1.55a5.7 5.7 0 0 0-1.63.95l-1.46-.59a.3.3 0 0 0-.37.13L2.16 4.78a.3.3 0 0 0 .07.38l1.24.96A5.6 5.6 0 0 0 3.39 8a5.6 5.6 0 0 0 .08.94l-1.24.96a.3.3 0 0 0-.07.38l1.18 2.04a.3.3 0 0 0 .37.13l1.46-.59a5.7 5.7 0 0 0 1.63.95l.22 1.55a.3.3 0 0 0 .3.26h2.36a.3.3 0 0 0 .3-.26l.22-1.55a5.7 5.7 0 0 0 1.63-.95l1.46.59a.3.3 0 0 0 .37-.13l1.18-2.04a.3.3 0 0 0-.07-.38l-1.24-.96A5.6 5.6 0 0 0 13.6 8Z" />
+    </svg>
+  )
+}
+
+/** Log out icon. */
+export function LogOutIcon({ size = 16, className }: SkillsHubIconProps): JSX.Element {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" className={className} strokeWidth={1.5} {...stroke} aria-hidden="true" focusable="false">
+      <path d="M6 13.5H3a1.5 1.5 0 0 1-1.5-1.5V4A1.5 1.5 0 0 1 3 2.5h3" />
+      <path d="M10.5 11 14 7.5 10.5 4" />
+      <path d="M14 7.5H6" />
+    </svg>
+  )
+}

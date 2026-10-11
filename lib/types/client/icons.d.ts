@@ -75,3 +75,9 @@ export declare function TagIcon({ size, className }: SkillsHubIconProps): JSX.El
 export declare function FolderIcon({ size, className }: SkillsHubIconProps): JSX.Element;
 /** Arrow leaving a frame: open the same skill in the marketplace. */
 export declare function ExternalLinkIcon({ size, className }: SkillsHubIconProps): JSX.Element;
+/** User outline: login and account avatar placeholder. */
+export declare function UserIcon({ size, className }: SkillsHubIconProps): JSX.Element;
+/** Gear: settings launcher icon. */
+export declare function SettingsIcon({ size, className }: SkillsHubIconProps): JSX.Element;
+/** Log out icon. */
+export declare function LogOutIcon({ size, className }: SkillsHubIconProps): JSX.Element;

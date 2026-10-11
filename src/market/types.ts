@@ -8,7 +8,8 @@
 
 export type MarketSource = 'clawhub' | 'skillhub' | 'selfhosted'
 
-export const MARKET_SOURCES: MarketSource[] = ['clawhub', 'skillhub', 'selfhosted']
+export const ALL_KNOWN_SOURCES: readonly MarketSource[] = ['clawhub', 'skillhub', 'selfhosted'] as const
+export const MARKET_SOURCES: readonly MarketSource[] = ['clawhub', 'skillhub', 'selfhosted'] as const
 
 export type SecurityStatus = 'verified' | 'benign' | 'unknown' | 'flagged'
 
@@ -200,7 +201,7 @@ export function parseSkillId(id: string): { source: MarketSource; slug: string }
   if (idx <= 0) return null
   const source = id.slice(0, idx)
   const slug = id.slice(idx + 1)
-  if (!MARKET_SOURCES.includes(source as MarketSource) || !slug) return null
+  if (!ALL_KNOWN_SOURCES.includes(source as MarketSource) || !slug) return null
   return { source: source as MarketSource, slug }
 }
 

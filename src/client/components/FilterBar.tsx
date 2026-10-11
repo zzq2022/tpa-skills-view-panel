@@ -6,7 +6,7 @@ import { CloseIcon, SearchIcon } from '../icons.tsx'
 import styles from './FilterBar.module.css'
 
 /** Option order for each select; the values are the frozen filter unions. */
-const SOURCE_OPTIONS: readonly MarketFilters['source'][] = ['all', 'clawhub', 'skillhub', 'selfhosted']
+const SOURCE_OPTIONS: readonly MarketFilters['source'][] = ['all', 'selfhosted']
 const SECURITY_OPTIONS: readonly MarketFilters['security'][] = ['all', 'verified', 'benign', 'unknown', 'flagged']
 const INSTALLED_OPTIONS: readonly MarketFilters['installed'][] = ['all', 'installable']
 
