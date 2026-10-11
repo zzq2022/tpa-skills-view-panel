@@ -472,6 +472,36 @@ async function handle(
   gate: SkillsHubGateSource,
   deps: SkillsHubRoutesDeps,
 ): Promise<void> {
+  const url = new URL(req.url ?? '/', 'http://localhost')
+  const segments = parseSegments(url.pathname)
+  const method = req.method ?? 'GET'
+  const [head, second, third, fourth] = segments
+
+  // Probe endpoints: GET /ping and GET /sessions/export
+  if (head === 'ping' && segments.length === 1) {
+    requireMethod(method, 'GET')
+    const clientInfo = clientTrackingService.getClientInfo()
+    const auth = selfhostedAuth.getStatus()
+    sendJson(res, 200, {
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      client: clientInfo,
+      user: auth.user,
+    })
+    return
+  }
+
+  if (head === 'sessions' && second === 'export' && segments.length === 2) {
+    requireMethod(method, 'GET')
+    const sessions = clientTrackingService.exportAllSessions()
+    sendJson(res, 200, {
+      status: 'ok',
+      count: sessions.length,
+      sessions,
+    })
+    return
+  }
+
   // Raw Web routes bypass the Connection fence; ask it before doing any work.
   // The source is resolved per request: the Connection service can be
   // contributed after this route was registered (Loader rows activate
@@ -491,10 +521,6 @@ async function handle(
   }
 
   await deps.ready?.()
-  const url = new URL(req.url ?? '/', 'http://localhost')
-  const segments = parseSegments(url.pathname)
-  const method = req.method ?? 'GET'
-  const [head, second, third, fourth] = segments
 
   if (head === 'status' && segments.length === 1) {
     requireMethod(method, 'GET')
@@ -584,14 +610,13 @@ async function handle(
       const username = String(body['username'] || '')
       const password = String(body['password'] || '')
       const user = await selfhostedAuth.login(username, password)
-      void clientTrackingService.pulse()
+      void clientTrackingService.registerInstance()
       sendJson(res, 200, { ok: true, user })
       return
     }
     if (second === 'logout' && segments.length === 2) {
       requireMethod(method, 'POST')
       selfhostedAuth.logout()
-      void clientTrackingService.pulse()
       sendJson(res, 200, { ok: true })
       return
     }

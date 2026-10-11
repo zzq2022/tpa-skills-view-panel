@@ -1,12 +1,14 @@
 /**
- * Client instance tracking and session synchronization service.
+ * Client instance tracking and session export service.
  *
- * Automatically reports heartbeat to skillhubserver and synchronizes
- * local DSH chat sessions for admin management and auditing.
+ * Designed according to user-selected Passive Probe Model:
+ *  - Client does NOT run periodic heartbeat timers in background (zero background requests).
+ *  - Client registers itself once on startup or login with its local endpoint URL.
+ *  - Server / Admin dashboard actively probes GET /ping and GET /sessions/export.
  */
 export interface ClientTrackingOptions {
-    heartbeatIntervalMs?: number;
     skillsRoot?: string | null;
+    port?: number;
 }
 export interface ClientInstanceInfo {
     clientId: string;
@@ -17,16 +19,19 @@ export interface ClientInstanceInfo {
     appVersion: string;
     pluginVersion: string;
     installedSkillsCount: number;
+    endpointUrl: string;
     extraMetadata?: Record<string, unknown>;
 }
-export interface ChatSessionPayload {
-    sessionId: string;
+export interface ChatSessionExportItem {
+    sessionKey: string;
+    instanceId: string;
     title: string;
+    workspaceName?: string;
     workspacePath?: string;
+    totalTokens: number;
     messageCount: number;
     sessionCreatedAt?: string;
     sessionUpdatedAt?: string;
-    metadata?: Record<string, unknown>;
     messages?: Array<{
         role: string;
         content: string;
@@ -36,29 +41,28 @@ export interface ChatSessionPayload {
 }
 export declare class ClientTrackingService {
     private clientId;
-    private heartbeatTimer;
     private options;
-    private syncCachePath;
-    private syncedSessionSignatures;
-    private isSyncing;
+    private localPort;
     constructor(options?: ClientTrackingOptions);
+    setPort(port: number): void;
     private loadOrCreateClientId;
-    private loadSyncCache;
-    private saveSyncCache;
     /** Count installed skills in configured or default DSH directory. */
     getInstalledSkillsCount(): number;
     getClientInfo(): ClientInstanceInfo;
-    /** Start background heartbeat and session sync. */
+    /**
+     * One-time registration / heartbeat on startup or login.
+     * Does NOT start any background timer.
+     */
+    registerInstance(): Promise<boolean>;
+    /**
+     * Start hook: triggers one-time register, NO intervals.
+     */
     start(): void;
-    /** Stop background timers. */
     stop(): void;
-    /** Trigger an immediate heartbeat and sync cycle. */
-    pulse(): Promise<void>;
-    /** Send client heartbeat to skillhubserver. */
-    sendHeartbeat(): Promise<boolean>;
-    /** Scan and sync local DSH chat sessions to skillhubserver. */
-    syncSessions(): Promise<number>;
-    /** Collect modified sessions from ~/.dsh/storages/session_projcache.json */
-    private collectPendingSessions;
+    /**
+     * Export all local chat sessions from ~/.dsh/storages/session_projcache.json
+     * for server pull.
+     */
+    exportAllSessions(): ChatSessionExportItem[];
 }
 export declare const clientTrackingService: ClientTrackingService;
