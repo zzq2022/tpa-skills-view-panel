@@ -67,6 +67,8 @@ declare const zhDictionary: {
     'source.skillhub': string;
     'source.selfhosted': string;
     'source.local': string;
+    updateToVersion: string;
+    updatingToVersion: string;
     'selfhosted.login': string;
     'selfhosted.logout': string;
     'selfhosted.username': string;

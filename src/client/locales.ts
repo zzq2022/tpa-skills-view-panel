@@ -69,8 +69,10 @@ const zhDictionary = {
   'source.all': '全部来源',
   'source.clawhub': 'ClawHub',
   'source.skillhub': 'SkillHub',
-  'source.selfhosted': '本地技能库 (Self-Hosted)',
+  'source.selfhosted': 'SkillHub Server',
   'source.local': '本机技能',
+  updateToVersion: '更新到 v{version}',
+  updatingToVersion: '正在更新…',
 
   'selfhosted.login': '登录自建源',
   'selfhosted.logout': '退出登录',
@@ -288,8 +290,10 @@ export const en: Record<keyof typeof zhDictionary, string> = {
   'source.all': 'All sources',
   'source.clawhub': 'ClawHub',
   'source.skillhub': 'SkillHub',
-  'source.selfhosted': 'Self-Hosted Hub',
+  'source.selfhosted': 'SkillHub Server',
   'source.local': 'Local skill',
+  updateToVersion: 'Update to v{version}',
+  updatingToVersion: 'Updating…',
 
   'selfhosted.login': 'Log in to Self-Hosted Hub',
   'selfhosted.logout': 'Log out',

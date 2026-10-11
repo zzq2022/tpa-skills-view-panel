@@ -12,6 +12,13 @@
  * destructive action, which is exactly what the primitive's dialog is for. The
  * skill's *content* is not, which is why it moved to a page.
  */
+/** Compare semver versions; returns true if remote is higher than local. */
+export declare function isNewerVersion(remote?: string, local?: string): boolean;
+export interface RemoteSkillInfo {
+    id: string;
+    version?: string;
+    owner?: string;
+}
 export declare function InstalledSkills(props: {
     /** A removal changed the local inventory; the market half refreshes too. */
     onChanged: () => void;

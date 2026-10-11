@@ -15,13 +15,42 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { Button, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
-import { fetchInstalled, isAbortError, removeInstalled, uploadInstalledSkillToSelfhosted, type InstalledSkillRecord } from '../api.ts'
+import {
+  fetchInstalled,
+  fetchMarketList,
+  installSkill,
+  isAbortError,
+  removeInstalled,
+  uploadInstalledSkillToSelfhosted,
+  type InstalledSkillRecord,
+} from '../api.ts'
 import { useT } from '../locale-context.tsx'
-import { FolderIcon, RefreshIcon, SearchIcon, TrashIcon, UploadIcon } from '../icons.tsx'
+import { DownloadIcon, FolderIcon, RefreshIcon, SearchIcon, TrashIcon, UploadIcon } from '../icons.tsx'
 import { InstalledSkillDetail } from './InstalledSkillDetail.tsx'
 import { SkillAvatar } from './SkillAvatar.tsx'
 import { Chip } from './SkillDetailShell.tsx'
 import styles from './InstalledSkills.module.css'
+
+/** Compare semver versions; returns true if remote is higher than local. */
+export function isNewerVersion(remote?: string, local?: string): boolean {
+  if (!remote || !local) return false
+  if (remote === local) return false
+  const rParts = remote.replace(/^v/, '').split('.').map((n) => Number.parseInt(n, 10) || 0)
+  const lParts = local.replace(/^v/, '').split('.').map((n) => Number.parseInt(n, 10) || 0)
+  for (let i = 0; i < Math.max(rParts.length, lParts.length); i++) {
+    const r = rParts[i] || 0
+    const l = lParts[i] || 0
+    if (r > l) return true
+    if (r < l) return false
+  }
+  return false
+}
+
+export interface RemoteSkillInfo {
+  id: string
+  version?: string
+  owner?: string
+}
 
 /** Reader-facing text for anything thrown by the client. */
 function messageOf(reason: unknown): string {
@@ -44,8 +73,10 @@ export function InstalledSkills(props: {
   const [pending, setPending] = useState<InstalledSkillRecord | null>(null)
   const [busy, setBusy] = useState(false)
   const [uploadingKey, setUploadingKey] = useState<string | null>(null)
+  const [updatingKey, setUpdatingKey] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [returnFocusKey, setReturnFocusKey] = useState<string | null>(null)
+  const [remoteSkills, setRemoteSkills] = useState<Map<string, { version?: string; id: string; owner?: string }>>(new Map())
   /** Row buttons by skill key, so the detail page can hand focus back. */
   const rowButtons = useRef(new Map<string, HTMLButtonElement>())
 
@@ -58,10 +89,28 @@ export function InstalledSkills(props: {
       await uploadInstalledSkillToSelfhosted(target.key)
       setNotice(t('uploadSuccessNotice'))
       props.onChanged()
+      setRevision((r) => r + 1)
     } catch (reason: unknown) {
       setError(messageOf(reason))
     } finally {
       setUploadingKey(null)
+    }
+  }
+
+  const handleUpdate = async (item: InstalledSkillRecord, remoteId: string, remoteOwner?: string): Promise<void> => {
+    if (updatingKey !== null) return
+    setUpdatingKey(item.key)
+    setError(null)
+    setNotice(null)
+    try {
+      await installSkill(remoteId, remoteOwner)
+      setNotice(`技能「${item.name}」已成功更新到最新版本！`)
+      props.onChanged()
+      setRevision((r) => r + 1)
+    } catch (reason: unknown) {
+      setError(messageOf(reason))
+    } finally {
+      setUpdatingKey(null)
     }
   }
 
@@ -79,6 +128,22 @@ export function InstalledSkills(props: {
       .finally(() => {
         if (!abort.signal.aborted) setLoading(false)
       })
+
+    void fetchMarketList({ source: 'selfhosted', security: 'all', installed: 'all', scope: 'market' }, abort.signal)
+      .then((res) => {
+        if (abort.signal.aborted) return
+        const map = new Map<string, { version?: string; id: string; owner?: string }>()
+        for (const mItem of res.items) {
+          map.set(mItem.slug.toLowerCase(), {
+            version: mItem.version,
+            id: mItem.id,
+            owner: mItem.author?.displayName || mItem.author?.handle,
+          })
+        }
+        setRemoteSkills(map)
+      })
+      .catch(() => undefined)
+
     return () => abort.abort()
   }, [revision])
 
@@ -122,12 +187,17 @@ export function InstalledSkills(props: {
         <InstalledSkillDetail
           key={selected.key}
           item={selected}
+          remoteInfo={
+            remoteSkills.get(selected.slug.toLowerCase()) ||
+            remoteSkills.get(selected.name.toLowerCase())
+          }
           onBack={() => {
             setReturnFocusKey(selected.key)
             setSelectedKey(null)
           }}
           onUninstall={setPending}
           onOpenMarket={props.onOpenMarket}
+          onUpdate={handleUpdate}
         />
       ) : (
         <section className={styles.root}>
@@ -186,67 +256,127 @@ export function InstalledSkills(props: {
                   <p className={styles.empty}>{t(items.length === 0 ? 'installedEmpty' : 'emptySearch')}</p>
                 ) : (
                   <div className={styles.list}>
-                    {visible.map((item) => (
-                      <article key={item.key} className={styles.card}>
-                        <SkillAvatar name={item.name} source={item.source} size={44} />
-                        <div className={styles.info}>
-                          <div className={styles.nameRow}>
+                    {visible.map((item) => {
+                      const remoteInfo =
+                        remoteSkills.get(item.slug.toLowerCase()) ||
+                        remoteSkills.get(item.dirName.toLowerCase())
+                      const hasUpdate = Boolean(
+                        remoteInfo &&
+                        remoteInfo.version &&
+                        isNewerVersion(remoteInfo.version, item.version)
+                      )
+                      const isFromSelfhosted = item.source === 'selfhosted' || Boolean(remoteInfo)
+
+                      return (
+                        <article key={item.key} className={styles.card}>
+                          <SkillAvatar
+                            name={item.name}
+                            source={isFromSelfhosted ? 'selfhosted' : item.source}
+                            size={44}
+                          />
+                          <div className={styles.info}>
+                            <div className={styles.nameRow}>
+                              <button
+                                type="button"
+                                className={styles.name}
+                                ref={(node) => {
+                                  if (node === null) rowButtons.current.delete(item.key)
+                                  else rowButtons.current.set(item.key, node)
+                                }}
+                                onClick={() => setSelectedKey(item.key)}
+                              >
+                                {item.name}
+                              </button>
+                              {item.version !== undefined && item.version !== '' && (
+                                <span className={styles.version}>v{item.version}</span>
+                              )}
+                            </div>
+                            <div className={styles.chips}>
+                              <Chip tone={isFromSelfhosted ? 'blue' : 'plain'}>
+                                {isFromSelfhosted
+                                  ? 'SkillHub Server'
+                                  : item.source === 'local'
+                                  ? t('localSkill')
+                                  : t(`source.${item.source}`)}
+                              </Chip>
+                              {item.linked && <Chip>{t('linkedSkill')}</Chip>}
+                            </div>
+                            {item.summary !== undefined && item.summary !== '' && (
+                              <p className={styles.summary}>{item.summary}</p>
+                            )}
+                            <p className={styles.path}>
+                              <FolderIcon size={13} />
+                              <span>{item.dirPath}</span>
+                            </p>
+                          </div>
+                          <div className={styles.actions}>
                             <button
                               type="button"
-                              className={styles.name}
-                              ref={(node) => {
-                                if (node === null) rowButtons.current.delete(item.key)
-                                else rowButtons.current.set(item.key, node)
-                              }}
+                              className={styles.secondaryButton}
                               onClick={() => setSelectedKey(item.key)}
                             >
-                              {item.name}
+                              {t('viewInstalled')}
                             </button>
-                            {item.version !== undefined && item.version !== '' && (
-                              <span className={styles.version}>v{item.version}</span>
+
+                            {hasUpdate && remoteInfo ? (
+                              <button
+                                type="button"
+                                className={styles.secondaryButton}
+                                style={{
+                                  color: 'var(--dsw-alias-brand-primary, #4d6bfe)',
+                                  borderColor: 'var(--dsw-alias-brand-primary, #4d6bfe)',
+                                  fontWeight: 600,
+                                }}
+                                disabled={updatingKey === item.key}
+                                onClick={() => handleUpdate(item, remoteInfo.id, remoteInfo.owner)}
+                              >
+                                <DownloadIcon size={14} />
+                                {updatingKey === item.key
+                                  ? t('updatingToVersion')
+                                  : t('updateToVersion', { version: remoteInfo.version })}
+                              </button>
+                            ) : isFromSelfhosted ? (
+                              <button
+                                type="button"
+                                className={styles.secondaryButton}
+                                onClick={() =>
+                                  props.onOpenMarket(
+                                    remoteInfo ? remoteInfo.id : item.id,
+                                    item.owner || remoteInfo?.owner
+                                  )
+                                }
+                              >
+                                {t('openInMarket')}
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                className={styles.secondaryButton}
+                                disabled={uploadingKey === item.key}
+                                title={t('uploadToSelfhosted')}
+                                onClick={() => handleUpload(item)}
+                              >
+                                <UploadIcon size={14} />
+                                {uploadingKey === item.key
+                                  ? t('uploadingToSelfhosted')
+                                  : t('uploadToSelfhosted')}
+                              </button>
                             )}
+
+                            <button
+                              type="button"
+                              className={styles.secondaryButton}
+                              disabled={!item.removable}
+                              title={item.removable ? undefined : t('uninstallDisabled')}
+                              onClick={() => setPending(item)}
+                            >
+                              <TrashIcon size={14} />
+                              {t('uninstall')}
+                            </button>
                           </div>
-                          <div className={styles.chips}>
-                            <Chip tone={item.managed ? 'blue' : 'plain'}>
-                              {item.source === 'local' ? t('localSkill') : t(`source.${item.source}`)}
-                            </Chip>
-                            {item.linked && <Chip>{t('linkedSkill')}</Chip>}
-                          </div>
-                          {item.summary !== undefined && item.summary !== '' && (
-                            <p className={styles.summary}>{item.summary}</p>
-                          )}
-                          <p className={styles.path}>
-                            <FolderIcon size={13} />
-                            <span>{item.dirPath}</span>
-                          </p>
-                        </div>
-                        <div className={styles.actions}>
-                          <button type="button" className={styles.secondaryButton} onClick={() => setSelectedKey(item.key)}>
-                            {t('viewInstalled')}
-                          </button>
-                          <button
-                            type="button"
-                            className={styles.secondaryButton}
-                            disabled={uploadingKey === item.key}
-                            title={t('uploadToSelfhosted')}
-                            onClick={() => handleUpload(item)}
-                          >
-                            <UploadIcon size={14} />
-                            {uploadingKey === item.key ? t('uploadingToSelfhosted') : t('uploadToSelfhosted')}
-                          </button>
-                          <button
-                            type="button"
-                            className={styles.secondaryButton}
-                            disabled={!item.removable}
-                            title={item.removable ? undefined : t('uninstallDisabled')}
-                            onClick={() => setPending(item)}
-                          >
-                            <TrashIcon size={14} />
-                            {t('uninstall')}
-                          </button>
-                        </div>
-                      </article>
-                    ))}
+                        </article>
+                      )
+                    })}
                   </div>
                 )}
               </>

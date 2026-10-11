@@ -15,10 +15,13 @@
  * upstream data upstream and this page readable with the network down.
  */
 import { type InstalledSkillRecord } from '../api.ts';
+import { type RemoteSkillInfo } from './InstalledSkills.tsx';
 export declare function InstalledSkillDetail(props: {
     item: InstalledSkillRecord;
+    remoteInfo?: RemoteSkillInfo;
     onBack: () => void;
     onUninstall: (item: InstalledSkillRecord) => void;
     /** Open the same skill's market page; only offered for market provenance. */
     onOpenMarket: (id: string, owner?: string) => void;
+    onUpdate?: (item: InstalledSkillRecord, id: string, owner?: string) => Promise<void>;
 }): JSX.Element;

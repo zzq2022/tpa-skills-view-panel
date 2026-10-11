@@ -28,11 +28,12 @@ import {
 } from '../api.ts'
 import { parseSkillFrontmatter, stripSkillFrontmatter } from '../skill-markdown.ts'
 import { useT } from '../locale-context.tsx'
-import { CheckIcon, CopyIcon, ExternalLinkIcon, FolderIcon, TrashIcon, UploadIcon } from '../icons.tsx'
+import { CheckIcon, CopyIcon, DownloadIcon, ExternalLinkIcon, FolderIcon, TrashIcon, UploadIcon } from '../icons.tsx'
 import { FrontmatterPanel } from './FrontmatterPanel.tsx'
 import { MarkdownView } from './MarkdownView.tsx'
 import { SkillAvatar } from './SkillAvatar.tsx'
 import { SkillFiles } from './SkillFiles.tsx'
+import { isNewerVersion, type RemoteSkillInfo } from './InstalledSkills.tsx'
 import {
   Chip,
   DetailColumns,
@@ -60,12 +61,14 @@ function formatInstalledAt(value: string): string {
 
 export function InstalledSkillDetail(props: {
   item: InstalledSkillRecord
+  remoteInfo?: RemoteSkillInfo
   onBack: () => void
   onUninstall: (item: InstalledSkillRecord) => void
   /** Open the same skill's market page; only offered for market provenance. */
   onOpenMarket: (id: string, owner?: string) => void
+  onUpdate?: (item: InstalledSkillRecord, id: string, owner?: string) => Promise<void>
 }): JSX.Element {
-  const { item } = props
+  const { item, remoteInfo, onUpdate } = props
   const t = useT()
   const [detail, setDetail] = useState<LocalSkillDetail | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -77,9 +80,28 @@ export function InstalledSkillDetail(props: {
   const [fileError, setFileError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [updating, setUpdating] = useState(false)
   const [uploadNotice, setUploadNotice] = useState<string | null>(null)
   const [uploadError, setUploadError] = useState<string | null>(null)
   const resetTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+
+  const isFromSelfhosted = item.source === 'selfhosted' || !!remoteInfo
+  const hasUpdate = remoteInfo ? isNewerVersion(remoteInfo.version, item.version) : false
+
+  const handleUpdate = async (): Promise<void> => {
+    if (!onUpdate || !remoteInfo || updating) return
+    setUpdating(true)
+    setUploadNotice(null)
+    setUploadError(null)
+    try {
+      await onUpdate(item, remoteInfo.id, remoteInfo.owner)
+      setRevision((value) => value + 1)
+    } catch (reason: unknown) {
+      setUploadError(messageOf(reason))
+    } finally {
+      setUpdating(false)
+    }
+  }
 
   const handleUpload = async (): Promise<void> => {
     if (uploading) return
@@ -89,6 +111,7 @@ export function InstalledSkillDetail(props: {
     try {
       await uploadInstalledSkillToSelfhosted(item.key)
       setUploadNotice(t('uploadSuccessNotice'))
+      setRevision((value) => value + 1)
     } catch (reason: unknown) {
       setUploadError(reason instanceof Error ? reason.message : String(reason))
     } finally {
@@ -167,14 +190,14 @@ export function InstalledSkillDetail(props: {
   const installedAt = item.installedAt === undefined ? '' : formatInstalledAt(item.installedAt)
 
   const fileCount = detail?.files.length ?? item.fileCount
-  const sourceName = item.source === 'local' ? t('localSkill') : t(`source.${item.source}`)
+  const sourceName = isFromSelfhosted ? 'SkillHub Server' : item.source === 'local' ? t('localSkill') : t(`source.${item.source}`)
 
   return (
     <SkillDetailShell
       focusKey={item.key}
       onBack={props.onBack}
       backLabel={t('installedTitle')}
-      avatar={<SkillAvatar name={item.name} source={item.source} size={72} />}
+      avatar={<SkillAvatar name={item.name} source={isFromSelfhosted ? 'selfhosted' : item.source} size={72} />}
       name={item.name}
       version={item.version}
       meta={
@@ -189,33 +212,58 @@ export function InstalledSkillDetail(props: {
       summary={item.summary}
       chips={
         <>
-          <Chip tone={item.managed ? 'blue' : 'plain'}>{item.managed ? t('managedByHub') : t('unmanagedSkill')}</Chip>
+          <Chip tone={isFromSelfhosted || item.managed ? 'blue' : 'plain'}>
+            {isFromSelfhosted ? 'SkillHub Server' : item.managed ? t('managedByHub') : t('unmanagedSkill')}
+          </Chip>
           {item.linked && <Chip>{t('symlinkSkill')}</Chip>}
           {detail !== null && <Chip>{flatSkill ? t('flatSkill') : t('bundleSkill')}</Chip>}
         </>
       }
       actions={
         <>
-          {marketId !== null && (
+          {hasUpdate && remoteInfo ? (
             <button
               type="button"
               className={detailStyles.secondaryButton}
-              onClick={() => props.onOpenMarket(marketId, item.owner)}
+              style={{
+                color: 'var(--dsw-alias-brand-primary, #4d6bfe)',
+                borderColor: 'var(--dsw-alias-brand-primary, #4d6bfe)',
+                fontWeight: 600,
+              }}
+              disabled={updating}
+              onClick={handleUpdate}
+            >
+              <DownloadIcon size={14} />
+              {updating
+                ? t('updatingToVersion')
+                : t('updateToVersion', { version: remoteInfo.version })}
+            </button>
+          ) : isFromSelfhosted ? (
+            <button
+              type="button"
+              className={detailStyles.secondaryButton}
+              onClick={() =>
+                props.onOpenMarket(
+                  remoteInfo ? remoteInfo.id : item.id,
+                  item.owner || remoteInfo?.owner
+                )
+              }
             >
               {t('openInMarket')}
               <ExternalLinkIcon size={14} />
             </button>
+          ) : (
+            <button
+              type="button"
+              className={detailStyles.secondaryButton}
+              disabled={uploading}
+              title={t('uploadToSelfhosted')}
+              onClick={handleUpload}
+            >
+              <UploadIcon size={14} />
+              {uploading ? t('uploadingToSelfhosted') : t('uploadToSelfhosted')}
+            </button>
           )}
-          <button
-            type="button"
-            className={detailStyles.secondaryButton}
-            disabled={uploading}
-            title={t('uploadToSelfhosted')}
-            onClick={handleUpload}
-          >
-            <UploadIcon size={14} />
-            {uploading ? t('uploadingToSelfhosted') : t('uploadToSelfhosted')}
-          </button>
           <button
             type="button"
             className={detailStyles.secondaryButton}
