@@ -9,3 +9,5 @@ artifacts/
 # repository is what makes `dsh plugin add github:<owner>/dsh-skills-hub` work
 # without the user running a build.
 
+
+data/
